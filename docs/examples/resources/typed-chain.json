@@ -1,0 +1,50 @@
+{
+  "spec_version": "1.0",
+  "id": "demo_typed_resources",
+  "version": 1,
+  "description": "Resolve a dictionary entry and round trip actual protobuf bytes.",
+  "execution": {
+    "mode": "sequential",
+    "recovery": "resume"
+  },
+  "resources": {
+    "people": {"$artifact": "<DICTIONARY_FILE_ULID>"},
+    "person": {"$artifact": "<DESCRIPTOR_FILE_ULID>"}
+  },
+  "steps": [
+    {
+      "id": "lookup",
+      "action": "dictionary",
+      "config": {
+        "resource": {"$resource": "people"},
+        "pointer": "/people"
+      },
+      "input": {"key": "ada"}
+    },
+    {
+      "id": "encode",
+      "action": "protobuf",
+      "config": {
+        "descriptor": {"$resource": "person"},
+        "message": "demo.Person",
+        "operation": "encode",
+        "name": "person.pb"
+      },
+      "input": {"value": {"$ref": "/steps/lookup/value"}}
+    },
+    {
+      "id": "decode",
+      "action": "protobuf",
+      "config": {
+        "descriptor": {"$resource": "person"},
+        "message": "demo.Person",
+        "operation": "decode"
+      },
+      "input": {"file": {"$ref": "/steps/encode/file"}}
+    }
+  ],
+  "output": {
+    "person": {"$ref": "/steps/decode/value"},
+    "file": {"$ref": "/steps/encode/file"}
+  }
+}

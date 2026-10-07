@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kairos.local/schemas/workflow/1.0",
+  "title": "Kairos workflow specification 1.0",
+  "description": "Structural contract. The server compiler additionally checks action configuration, dependencies, references, schema limits, origin policy, resource existence, and expanded graph bounds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "steps"],
+  "properties": {
+    "spec_version": {"const": "1.0", "default": "1.0"},
+    "id": {"$ref": "#/$defs/identifier"},
+    "version": {"type": "integer", "minimum": 1},
+    "description": {"type": "string"},
+    "input_schema": {"type": ["object", "boolean"]},
+    "timeout_seconds": {"type": "integer", "minimum": 0, "maximum": 300},
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["dag", "sequential"]},
+        "recovery": {"enum": ["manual", "resume"]}
+      }
+    },
+    "resources": {
+      "type": "object", "maxProperties": 32,
+      "propertyNames": {"$ref": "#/$defs/identifier"},
+      "additionalProperties": {"$ref": "#/$defs/artifact"}
+    },
+    "triggers": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/trigger"}},
+    "steps": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/$defs/step"}},
+    "output": {"type": "object"}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$"},
+    "artifact": {
+      "type": "object", "required": ["$artifact"],
+      "properties": {"$artifact": {"type": "string", "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    },
+    "resource_alias": {
+      "type": "object", "additionalProperties": false, "required": ["$resource"],
+      "properties": {"$resource": {"$ref": "#/$defs/identifier"}}
+    },
+    "step": {
+      "type": "object", "additionalProperties": false, "required": ["id", "action"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "action": {"type": "string", "minLength": 1},
+        "depends_on": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
+        "input": {"type": "object"},
+        "config": {"type": "object"},
+        "timeout_seconds": {"type": "integer", "minimum": 0, "maximum": 300},
+        "when": {"$ref": "#/$defs/condition"},
+        "retry": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "max_attempts": {"type": "integer", "minimum": 0, "maximum": 5},
+            "backoff_ms": {"type": "integer", "minimum": 0, "maximum": 30000},
+            "idempotent": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "condition": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "path": {"type": "string"},
+        "op": {"enum": ["eq", "ne", "exists", "not_exists", "gt", "gte", "lt", "lte", "in"]},
+        "value": {},
+        "all": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/condition"}},
+        "any": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/condition"}},
+        "not": {"$ref": "#/$defs/condition"}
+      },
+      "oneOf": [
+        {"required": ["path", "op"], "not": {"anyOf": [{"required": ["all"]}, {"required": ["any"]}, {"required": ["not"]}]}},
+        {"required": ["all"], "not": {"anyOf": [{"required": ["path"]}, {"required": ["op"]}, {"required": ["any"]}, {"required": ["not"]}]}},
+        {"required": ["any"], "not": {"anyOf": [{"required": ["path"]}, {"required": ["op"]}, {"required": ["all"]}, {"required": ["not"]}]}},
+        {"required": ["not"], "not": {"anyOf": [{"required": ["path"]}, {"required": ["op"]}, {"required": ["all"]}, {"required": ["any"]}]}}
+      ]
+    },
+    "trigger": {
+      "type": "object", "additionalProperties": false, "required": ["type"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "source": {"type": "string"},
+        "subject": {"type": "string"},
+        "match": {"type": "object"}
+      }
+    }
+  }
+}

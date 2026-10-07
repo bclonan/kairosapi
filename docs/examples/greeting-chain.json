@@ -1,0 +1,32 @@
+{
+  "spec_version": "1.0",
+  "id": "greeting_chain",
+  "version": 1,
+  "description": "Reuse a pinned greeting and return a receipt.",
+  "input_schema": {
+    "type": "object",
+    "required": ["name"],
+    "properties": {
+      "name": {"type": "string", "minLength": 1, "maxLength": 100}
+    },
+    "additionalProperties": false
+  },
+  "steps": [
+    {
+      "id": "greet",
+      "action": "workflow",
+      "config": {"workflow_id": "greeting", "version": 1},
+      "input": {"name": {"$ref": "/input/name"}}
+    },
+    {
+      "id": "receipt",
+      "action": "value",
+      "depends_on": ["greet"],
+      "input": {
+        "message": {"$ref": "/steps/greet/message"},
+        "run_id": {"$ref": "/run/id"}
+      }
+    }
+  ],
+  "output": {"receipt": {"$ref": "/steps/receipt"}}
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "welcome",
+    "version": 1,
+    "timeout_seconds": 10,
+    "steps": [
+      {"id": "profile", "action": "value", "input": {"name": {"$ref": "/input/name"}}},
+      {"id": "page", "action": "value", "input": {"title": "Welcome to Kairos", "message": "Your workflow ran in Go."}},
+      {
+        "id": "response",
+        "action": "value",
+        "depends_on": ["profile", "page"],
+        "input": {"profile": {"$ref": "/steps/profile"}, "page": {"$ref": "/steps/page"}}
+      }
+    ]
+  }
+]

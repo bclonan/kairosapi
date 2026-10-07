@@ -1,0 +1,48 @@
+{
+  "spec_version": "1.0",
+  "id": "async_operation",
+  "version": 1,
+  "description": "Wait for provider completion, then create its dependent receipt.",
+  "execution": {"mode": "sequential", "recovery": "resume"},
+  "timeout_seconds": 30,
+  "input_schema": {
+    "type": "object",
+    "required": ["api_base", "value"],
+    "properties": {
+      "api_base": {"type": "string", "minLength": 1},
+      "value": {"type": "string", "minLength": 1}
+    }
+  },
+  "steps": [
+    {
+      "id": "operation",
+      "action": "http",
+      "config": {
+        "url_from_input": true,
+        "method": "POST",
+        "idempotency_header": "Idempotency-Key",
+        "async": {"interval_ms": 100, "max_polls": 10}
+      },
+      "retry": {"max_attempts": 3, "idempotent": true, "backoff_ms": 100},
+      "input": {
+        "url": {"$concat": [{"$ref": "/input/api_base"}, "/operations"]},
+        "body": {"value": {"$ref": "/input/value"}}
+      }
+    },
+    {
+      "id": "receipt",
+      "action": "http",
+      "config": {"url_from_input": true, "method": "POST"},
+      "retry": {"max_attempts": 3, "idempotent": true, "backoff_ms": 100},
+      "input": {
+        "url": {"$concat": [{"$ref": "/input/api_base"}, "/operations/{id}/receipt"]},
+        "path": {"id": {"$ref": "/steps/operation/body/id"}}
+      }
+    }
+  ],
+  "output": {
+    "operation": {"$ref": "/steps/operation/body"},
+    "receipt": {"$ref": "/steps/receipt/body"},
+    "run_id": {"$ref": "/run/id"}
+  }
+}

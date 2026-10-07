@@ -1,0 +1,44 @@
+{
+  "spec_version": "1.0",
+  "id": "http_request",
+  "version": 1,
+  "description": "Reusable HTTP request within the server's configured origin policy.",
+  "input_schema": {
+    "type": "object",
+    "required": ["url", "method"],
+    "properties": {
+      "url": {"type": "string", "maxLength": 8192},
+      "method": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{0,31}$"},
+      "body": {},
+      "path": {"type": "object"},
+      "query": {"type": "object"},
+      "headers": {"type": "object"}
+    },
+    "additionalProperties": false
+  },
+  "steps": [
+    {
+      "id": "request",
+      "action": "http",
+      "config": {
+        "url_from_input": true,
+        "method_from_input": true,
+        "input_headers": ["Accept", "Content-Type", "X-Correlation-ID"],
+        "response_headers": ["Link", "X-Next-Cursor"]
+      },
+      "input": {
+        "url": {"$ref": "/input/url"},
+        "method": {"$ref": "/input/method"},
+        "body": {"$ref": "/input/body", "default": null},
+        "path": {"$ref": "/input/path", "default": {}},
+        "query": {"$ref": "/input/query", "default": {}},
+        "headers": {"$ref": "/input/headers", "default": {}}
+      }
+    }
+  ],
+  "output": {
+    "status": {"$ref": "/steps/request/status"},
+    "body": {"$ref": "/steps/request/body"},
+    "headers": {"$ref": "/steps/request/headers"}
+  }
+}

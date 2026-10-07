@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+/bin/
+/log/
+/server
+*.exe
+*.test
+coverage.out
+/data/
+*.db
+*.db.lock
+*.db.uploads/
+*.key
+*.pem
+*.ssl

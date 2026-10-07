@@ -1,0 +1,49 @@
+{
+  "spec_version": "1.0",
+  "id": "file_relay",
+  "version": 1,
+  "description": "Send an opaque file to an HTTP API, retain its response, and forward it as multipart data.",
+  "input_schema": {
+    "type": "object",
+    "required": ["file", "api_base"],
+    "properties": {
+      "file": {"type": "object", "required": ["$artifact"]},
+      "api_base": {"type": "string"}
+    },
+    "additionalProperties": false
+  },
+  "steps": [
+    {
+      "id": "relay",
+      "action": "http",
+      "config": {
+        "url_from_input": true,
+        "method": "POST",
+        "encoding": "file",
+        "response_mode": "file",
+        "response_name": "copy.bin"
+      },
+      "input": {
+        "url": {"$concat": [{"$ref": "/input/api_base"}, "/files/echo"]},
+        "body": {"$ref": "/input/file"}
+      }
+    },
+    {
+      "id": "inspect",
+      "action": "http",
+      "depends_on": ["relay"],
+      "config": {"url_from_input": true, "method": "POST", "encoding": "multipart"},
+      "input": {
+        "url": {"$concat": [{"$ref": "/input/api_base"}, "/files/inspect"]},
+        "body": {
+          "fields": {"note": "byte preservation"},
+          "files": [{"field": "document", "file": {"$ref": "/steps/relay/body"}}]
+        }
+      }
+    }
+  ],
+  "output": {
+    "file": {"$ref": "/steps/relay/body"},
+    "receipt": {"$ref": "/steps/inspect/body/files/0"}
+  }
+}

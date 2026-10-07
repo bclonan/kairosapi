@@ -1,0 +1,58 @@
+{
+  "spec_version": "1.0",
+  "id": "customer_events",
+  "version": 1,
+  "description": "Create a customer, optionally notify them, and return a receipt.",
+  "triggers": [{"type": "customer.requested", "source": "/kairos-demo"}],
+  "input_schema": {
+    "type": "object",
+    "required": ["data"],
+    "properties": {
+      "data": {
+        "type": "object",
+        "required": ["name", "notify", "api_base"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "notify": {"type": "boolean"},
+          "api_base": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "create",
+      "action": "workflow",
+      "config": {"workflow_id": "http_request", "version": 1},
+      "input": {
+        "url": {"$concat": [{"$ref": "/input/data/api_base"}, "/customers"]},
+        "method": "POST",
+        "body": {"name": {"$ref": "/input/data/name"}}
+      }
+    },
+    {
+      "id": "notify",
+      "action": "workflow",
+      "depends_on": ["create"],
+      "when": {"path": "/input/data/notify", "op": "eq", "value": true},
+      "config": {"workflow_id": "http_request", "version": 1},
+      "input": {
+        "url": {"$concat": [{"$ref": "/input/data/api_base"}, "/notifications/{id}"]},
+        "method": "POST",
+        "path": {"id": {"$ref": "/steps/create/body/id"}},
+        "body": {"message": {"$concat": ["Welcome ", {"$ref": "/input/data/name"}]}}
+      }
+    },
+    {
+      "id": "receipt",
+      "action": "value",
+      "depends_on": ["create", "notify"],
+      "input": {
+        "customer_id": {"$ref": "/steps/create/body/id"},
+        "notified": {"$ref": "/steps/notify/body/ok", "default": false},
+        "run_id": {"$ref": "/run/id"}
+      }
+    }
+  ],
+  "output": {"receipt": {"$ref": "/steps/receipt"}}
+}

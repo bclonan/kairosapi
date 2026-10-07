@@ -1,0 +1,5 @@
+{
+  "workflow_id": "greeting_chain",
+  "version": 1,
+  "input": {"name": "Ada"}
+}

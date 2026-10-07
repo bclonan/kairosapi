@@ -1,0 +1,35 @@
+services:
+  kairos:
+    build: .
+    ports:
+      - "127.0.0.1:8075:8075"
+    environment:
+      KAIROS_API_TOKEN: ${KAIROS_API_TOKEN:?Set KAIROS_API_TOKEN to a random token of at least 32 characters}
+      KAIROS_ADMIN_TOKEN: ${KAIROS_ADMIN_TOKEN:-}
+      KAIROS_ADDR: 0.0.0.0:8075
+      KAIROS_WORKERS: 8
+      KAIROS_MAX_RUNS: 16
+      KAIROS_RUN_TIMEOUT: 60s
+      KAIROS_DB_PATH: /data/kairos.db
+      KAIROS_QUEUE_SIZE: 128
+      KAIROS_MAX_RECORDS: 1000
+      KAIROS_RETENTION: 168h
+      KAIROS_FILE_MAX_BYTES: 33554432
+      KAIROS_FILE_TOTAL_BYTES: 268435456
+      KAIROS_FILE_MAX_COUNT: 1000
+      KAIROS_FILE_TRANSFERS: 2
+      KAIROS_HTTP_ALLOWED_ORIGINS: ${KAIROS_HTTP_ALLOWED_ORIGINS:-}
+      KAIROS_ALLOW_PRIVATE_NETWORKS: "false"
+      GOMEMLIMIT: 384MiB
+    volumes:
+      - kairos-data:/data
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1
+    stop_grace_period: 20s
+    restart: unless-stopped
+volumes:
+  kairos-data:
